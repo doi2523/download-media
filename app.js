@@ -42,16 +42,18 @@ app.post("/download", async (req, res) => {
     }
 
     // Chặn host lạ (tránh bị dùng làm proxy tải linh tinh)
-    const allowedHosts = [
-      "locket-dio.com",
-      "media.locket-dio.com",
-      "firebasestorage.googleapis.com",
-    ];
+    // const allowedHosts = [
+    //   "locket-dio.com",
+    //   "media.locket-dio.com",
+    //   "firebasestorage.googleapis.com",
+    // ];
 
-    const urlObj = new URL(url);
-    if (!allowedHosts.includes(urlObj.hostname)) {
-      return res.status(403).json({ error: "Host not allowed" });
-    }
+    // const urlObj = new URL(url);
+    // if (!allowedHosts.includes(urlObj.hostname)) {
+    //   return res.status(403).json({ error: "Host not allowed" });
+    // }
+
+    console.log("🔗 Download request for:", url);
 
     const response = await axios({
       method: "GET",
@@ -64,14 +66,10 @@ app.post("/download", async (req, res) => {
     const contentType =
       response.headers["content-type"] || "application/octet-stream";
 
-    const fileName =
-      url.split("/").pop().split("?")[0] || "file";
+    const fileName = url.split("/").pop().split("?")[0] || "file";
 
     res.setHeader("Content-Type", contentType);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
     response.data.pipe(res);
   } catch (error) {
