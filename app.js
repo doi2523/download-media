@@ -17,6 +17,7 @@ const allowedOrigins = [
   /^https?:\/\/(\w+\.)*locket-dio\.space$/,
   /^https?:\/\/(\w+\.)*locket-dio\.com$/,
   /^https?:\/\/([\w-]+\.)*web\.app$/,
+  /^https?:\/\/([\w-]+\.asse\.devtunnels\.ms)$/,
 ];
 
 const corsOptions = {
