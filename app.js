@@ -3,9 +3,6 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const fs = require("fs-extra");
-const path = require("path");
-const { randomUUID } = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,54 +41,45 @@ app.post("/download", async (req, res) => {
       return res.status(400).json({ error: "Missing url" });
     }
 
-    // Tạo thư mục temp
-    const tempDir = path.join(__dirname, "temp");
-    await fs.ensureDir(tempDir);
+    // Chặn host lạ (tránh bị dùng làm proxy tải linh tinh)
+    const allowedHosts = [
+      "locket-dio.com",
+      "media.locket-dio.com",
+      "firebasestorage.googleapis.com",
+    ];
 
-    // Tạo tên file random
-    const fileId = randomUUID();
-    const fileExt = path.extname(url).split("?")[0] || ".jpg";
-    const filePath = path.join(tempDir, `${fileId}${fileExt}`);
+    const urlObj = new URL(url);
+    if (!allowedHosts.includes(urlObj.hostname)) {
+      return res.status(403).json({ error: "Host not allowed" });
+    }
 
-    // Tải file
     const response = await axios({
       method: "GET",
-      url: url,
+      url,
       responseType: "stream",
+      timeout: 15000,
+      maxContentLength: 10 * 1024 * 1024, // 10MB
     });
 
-    // Lưu file
-    const writer = fs.createWriteStream(filePath);
-    response.data.pipe(writer);
+    const contentType =
+      response.headers["content-type"] || "application/octet-stream";
 
-    writer.on("finish", () => {
-      // Gửi file về client
-      res.download(filePath, `download${fileExt}`, async (err) => {
-        // Xóa file sau khi gửi xong
-        try {
-          await fs.remove(filePath);
-          console.log("🧹 File cleaned:", filePath);
-        } catch (e) {
-          console.error("❌ Clean error:", e);
-        }
+    const fileName =
+      url.split("/").pop().split("?")[0] || "file";
 
-        if (err) {
-          console.error("❌ Download error:", err);
-        }
-      });
-    });
+    res.setHeader("Content-Type", contentType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${fileName}"`
+    );
 
-    writer.on("error", (err) => {
-      console.error("❌ Write error:", err);
-      res.status(500).json({ error: "Download failed" });
-    });
+    response.data.pipe(res);
   } catch (error) {
-    console.error("❌ Error:", error.message);
-    res.status(500).json({ error: "Server error" });
+    console.error("❌ Download error:", error.message);
+    res.status(500).json({ error: "Download failed" });
   }
 });
 
-// ===== START =====
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
