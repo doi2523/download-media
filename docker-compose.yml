@@ -5,5 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${PORT}:5025"
+      - "${PORT:-5025}:5025"
+    environment:
+      - PORT=${PORT:-5025}
     restart: unless-stopped
