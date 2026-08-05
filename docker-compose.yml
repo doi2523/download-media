@@ -1,0 +1,9 @@
+services:
+  app:
+    container_name: locketdio-exten-media
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:5025"
+    restart: unless-stopped
